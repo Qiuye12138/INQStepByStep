@@ -12,6 +12,7 @@ import torch.optim as optim
 #-------------------------------------#
 BATCH_SIZE   = 50
 TOP          = 0
+EPOCH        = 0
 WEIGHTS_PATH = './resnet18-f37072fd.pth'
 
 
@@ -148,6 +149,7 @@ model.cuda()
 
 
 optimizer = optim.SGD(model.parameters(), lr = 0.01, momentum = 0.9)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 100, gamma = 0.1)
 criterion = nn.CrossEntropyLoss()
 
 
@@ -155,7 +157,7 @@ criterion = nn.CrossEntropyLoss()
 #-------------------------------------#
 #       训练
 #-------------------------------------#
-for epoch in range(0, 30):
+for epoch in range(0, 300):
 
     model.train()
 
@@ -172,6 +174,7 @@ for epoch in range(0, 30):
         loss.backward()
         optimizer.step()
 
+    scheduler.step()
 
     model.eval()
     
@@ -192,8 +195,9 @@ for epoch in range(0, 30):
 
         print('\r%d :Top1: %f%%, Top5: %f%%' %(k, 100 * top1 / k, 100 * top5 / k), end = '')
 
-    if (top1 / k) > TOP:
+    if (top1 / k) >= TOP:
         TOP = top1 / k
+        EPOCH = epoch
         torch.save(model.state_dict(), 'best.pth')
 
-    print('\n current best model is epoch: ' + str(epoch) + ', top1: ' + str(100 * TOP) + '%')
+    print('\n current best model is epoch: ' + str(EPOCH) + ', top1: ' + str(100 * TOP) + '%')

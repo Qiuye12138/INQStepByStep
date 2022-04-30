@@ -6,29 +6,6 @@ import torchvision as tv
 
 
 #-------------------------------------#
-#       参数
-#-------------------------------------#
-BATCH_SIZE = 50
-
-
-
-#-------------------------------------#
-#        构造数据集
-#-------------------------------------#
-transform = tv.transforms.Compose([tv.transforms.Resize(256),
-                                   tv.transforms.CenterCrop(224),
-                                   tv.transforms.ToTensor(),
-                                   tv.transforms.Normalize(mean = [0.485, 0.456, 0.406],
-                                                           std  = [0.229, 0.224, 0.225])])
-
-
-test_dataset = tv.datasets.CIFAR100(root = './', train = False, transform = transform, download = True)
-
-testloader   = torch.utils.data.DataLoader(test_dataset , batch_size = BATCH_SIZE, shuffle = False, num_workers = 2)
-
-
-
-#-------------------------------------#
 #       构造网络
 #-------------------------------------#
 class FirstConv2d(nn.Module):

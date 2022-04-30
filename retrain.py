@@ -61,10 +61,10 @@ class SGD(Optimizer):
 #-------------------------------------#
 #       参数
 #-------------------------------------#
-range_b    = 128.0
 SMAPLE_NUM = 10        #样本集大小
 BATCH_SIZE = 50
 TOP        = 0
+EPOCH      = 0
 
 
 
@@ -79,7 +79,7 @@ transform = tv.transforms.Compose([tv.transforms.Resize(256),
 
 train_dataset = tv.datasets.CIFAR100(root = './', train = True , transform = transform, download = True)
 test_dataset  = tv.datasets.CIFAR100(root = './', train = False, transform = transform, download = True)
-SAMPLELOADER  = torch.utils.data.DataLoader(test_dataset , batch_size=SMAPLE_NUM, shuffle=False, num_workers = 0)
+SAMPLELOADER  = torch.utils.data.DataLoader(test_dataset , batch_size = SMAPLE_NUM, shuffle = False, num_workers = 0)
 trainloader   = torch.utils.data.DataLoader(train_dataset, batch_size = BATCH_SIZE, shuffle = True , num_workers = 0)
 testloader    = torch.utils.data.DataLoader(test_dataset , batch_size = BATCH_SIZE, shuffle = False, num_workers = 0)
 
@@ -336,7 +336,8 @@ for img, label in testloader:
 
 
 model.cuda()
-optimizer = SGD(model.parameters(), lr=0.001, momentum=0.9)   # 瀛︿範鐜囦负0.001
+optimizer = SGD(model.parameters(), lr = 0.01, momentum = 0.9)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 100, gamma = 0.1)
 criterion = nn.CrossEntropyLoss()
 
 
@@ -345,8 +346,10 @@ criterion = nn.CrossEntropyLoss()
 #       训练
 #-------------------------------------#
 QUANT_WT = False
-for epoch in range(0, 30):
+for epoch in range(0, 300):
+
     model.train()
+
     for img, label in tqdm(trainloader):
         bns   = iter(bn_bag_quant)
         img   = img.cuda()
@@ -360,12 +363,14 @@ for epoch in range(0, 30):
         loss.backward()
         optimizer.step()
 
+    scheduler.step()
 
     model.eval()
     
     top1  = 0
     top5  = 0
     k     = 0
+
     for img, label in testloader:
         bns   = iter(bn_bag_quant)
         img   = img.cuda()
@@ -379,8 +384,9 @@ for epoch in range(0, 30):
 
         print('\r%d :Top1: %f%%, Top5: %f%%' %(k, 100 * top1 / k, 100 * top5 / k), end = '')
 
-    if (top1 / k) > TOP:
+    if (top1 / k) >= TOP:
         TOP = top1 / k
+        EPOCH = epoch
         torch.save(model.state_dict(), sys.argv[2] + '_best.pth')
 
-    print('\n current best model is epoch: ' + str(epoch) + ', top1: ' + str(100 * TOP) + '%')
+    print('\n current best model is epoch: ' + str(EPOCH) + ', top1: ' + str(100 * TOP) + '%')
